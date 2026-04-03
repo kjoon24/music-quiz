@@ -55,12 +55,28 @@
       text-align: center;
     }
     .list-subtitle {
-      font-size: 14px;
-      color: var(--muted);
-      letter-spacing: 2px;
-      text-transform: uppercase;
+      font-size: 16px;
+      font-weight: 700;
+      color: #000;
+      letter-spacing: 1px;
+      text-transform: none;
       margin-bottom: 48px;
       text-align: center;
+      background: var(--accent);
+      display: inline-block;
+      padding: 12px 24px;
+      border-radius: 24px;
+      position: relative;
+    }
+    .list-subtitle::after {
+      content: '';
+      position: absolute;
+      bottom: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 10px solid transparent;
+      border-right: 10px solid transparent;
+      border-top: 12px solid var(--accent);
     }
 
     .quiz-grid {
@@ -439,7 +455,7 @@
 <!-- ① 문제 목록 화면 -->
 <div id="screenList">
   <div class="list-title">🎵 들리는데 안들리는<br>알다가도 모를 찬양퀴즈!</div>
-  <div class="list-subtitle">들리는데 모르겠쥬?&nbsp;&nbsp;헷갈리쥬?? 👂</div>
+  <div class="list-subtitle">들리는데 모르겠쥬? 했갈리쥬? 👂</div>
   <div class="quiz-grid" id="quizGrid"></div>
 </div>
 
