@@ -241,7 +241,59 @@
     .btn-primary:hover { background: #ffd060; transform: translateY(-1px); }
     .btn-primary:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; transform: none; }
 
-    .btn-danger {
+    .btn-edit {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .btn-edit:hover { background: var(--accent); color: #000; }
+
+    .inline-edit {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .inline-edit input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      padding: 7px 12px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: 'Noto Sans KR', sans-serif;
+      outline: none;
+    }
+    .btn-save {
+      background: var(--success);
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      padding: 7px 14px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+    .btn-save:hover { opacity: .85; }
+    .btn-cancel {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .btn-cancel:hover { color: var(--text); }
       background: transparent;
       color: var(--accent2);
       border: 1px solid var(--accent2);
@@ -679,18 +731,57 @@
       const data = d.data();
       const item = document.createElement('div');
       item.className = 'quiz-item';
+      item.id = 'qi-' + d.id;
       item.innerHTML = `
         <div class="quiz-num">${data.order}</div>
         <div class="quiz-info">
-          <div class="quiz-title">${data.answer}</div>
+          <div class="quiz-title" id="qt-${d.id}">${data.answer}</div>
           <div class="quiz-meta">힌트음원 ✔ &nbsp;|&nbsp; 정답음원 ✔ &nbsp;${data.lyrics ? '|&nbsp; 가사 ✔ &nbsp;' : ''}${data.difficulty ? '|&nbsp; ' + '★'.repeat(data.difficulty) + '☆'.repeat(5 - data.difficulty) : ''}</div>
         </div>
         <div class="quiz-actions">
+          <button class="btn-edit" id="eb-${d.id}" onclick="startEdit('${d.id}', '${data.answer.replace(/'/g,"\\'")}')">수정</button>
           <button class="btn-danger" onclick="deleteQuiz('${d.id}')">삭제</button>
         </div>`;
       list.appendChild(item);
     });
   }
+
+  // ── 정답 인라인 수정 ─────────────────────────────────────
+  function startEdit(id, currentAnswer) {
+    const titleEl = document.getElementById('qt-' + id);
+    const editBtn = document.getElementById('eb-' + id);
+    editBtn.style.display = 'none';
+    titleEl.innerHTML = `
+      <div class="inline-edit">
+        <input type="text" id="ei-${id}" value="${currentAnswer}" placeholder="정답 입력">
+        <button class="btn-save" onclick="saveEdit('${id}')">저장</button>
+        <button class="btn-cancel" onclick="cancelEdit('${id}', '${currentAnswer.replace(/'/g,"\\'")}')">취소</button>
+      </div>`;
+    document.getElementById('ei-' + id).focus();
+    document.getElementById('ei-' + id).addEventListener('keydown', e => {
+      if (e.key === 'Enter') saveEdit(id);
+      if (e.key === 'Escape') cancelEdit(id, currentAnswer);
+    });
+  }
+
+  async function saveEdit(id) {
+    const newAnswer = document.getElementById('ei-' + id).value.trim();
+    if (!newAnswer) { showToast('정답을 입력해주세요.', 'error'); return; }
+    const { db, doc } = window._fb;
+    const { updateDoc } = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js');
+    await updateDoc(doc(db, 'quizzes', id), { answer: newAnswer });
+    showToast('수정 완료!', 'success');
+    loadQuizList();
+  }
+
+  function cancelEdit(id, original) {
+    document.getElementById('qt-' + id).innerHTML = original;
+    document.getElementById('eb-' + id).style.display = '';
+  }
+
+  window.startEdit  = startEdit;
+  window.saveEdit   = saveEdit;
+  window.cancelEdit = cancelEdit;
 
   // ── 퀴즈 삭제 ────────────────────────────────────────────
   async function deleteQuiz(id) {
