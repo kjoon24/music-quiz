@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎵 Music Quiz — Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --surface2: #1c1c27;
+      --border: #2a2a3a;
+      --accent: #f0c040;
+      --accent2: #e05a5a;
+      --text: #e8e8f0;
+      --muted: #6a6a8a;
+      --success: #40c070;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 26px;
+      letter-spacing: 3px;
+      color: var(--accent);
+    }
+    .logo span { color: var(--text); }
+
+    #loginBtn, #logoutBtn {
+      padding: 8px 20px;
+      border-radius: 8px;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all .2s;
+    }
+    #loginBtn {
+      background: var(--accent);
+      color: #000;
+    }
+    #loginBtn:hover { background: #ffd060; }
+    #logoutBtn {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    #logoutBtn:hover { color: var(--text); border-color: var(--muted); }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* ── LAYOUT ── */
+    #loginScreen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 64px);
+      gap: 16px;
+      color: var(--muted);
+    }
+    #loginScreen .icon { font-size: 48px; }
+    #loginScreen p { font-size: 15px; }
+
+    #adminPanel { display: none; }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+
+    /* ── SECTION TITLE ── */
+    .section-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 2px;
+      color: var(--accent);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-bottom: 32px;
+    }
+
+    /* ── FORM ── */
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    input[type="text"], input[type="number"], textarea, select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 14px;
+      transition: border-color .2s;
+      outline: none;
+    }
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    textarea:focus,
+    select:focus {
+      border-color: var(--accent);
+    }
+    textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
+
+    /* ── FILE UPLOAD ── */
+    .file-upload-area {
+      background: var(--surface2);
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .2s;
+      position: relative;
+    }
+    .file-upload-area:hover {
+      border-color: var(--accent);
+      background: rgba(240,192,64,.05);
+    }
+    .file-upload-area.dragover {
+      border-color: var(--accent);
+      background: rgba(240,192,64,.08);
+    }
+    .file-upload-area input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .upload-icon { font-size: 28px; margin-bottom: 8px; }
+    .upload-label { font-size: 13px; color: var(--muted); }
+    .upload-label strong { color: var(--accent); }
+    .file-name {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--success);
+      font-weight: 500;
+    }
+
+    /* ── PROGRESS ── */
+    .progress-wrap {
+      margin-top: 8px;
+      display: none;
+    }
+    .progress-bar-bg {
+      background: var(--surface2);
+      border-radius: 4px;
+      height: 6px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 4px;
+      width: 0%;
+      transition: width .3s;
+    }
+    .progress-text {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* ── ROW GRID ── */
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+    /* ── SUBMIT BTN ── */
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      padding: 14px 32px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all .2s;
+      width: 100%;
+    }
+    .btn-primary:hover { background: #ffd060; transform: translateY(-1px); }
+    .btn-primary:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; transform: none; }
+
+    .btn-danger {
+      background: transparent;
+      color: var(--accent2);
+      border: 1px solid var(--accent2);
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .btn-danger:hover { background: var(--accent2); color: #fff; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 24px;
+      font-size: 14px;
+      opacity: 0;
+      transition: all .3s;
+      z-index: 999;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    #toast.success { border-color: var(--success); color: var(--success); }
+    #toast.error { border-color: var(--accent2); color: var(--accent2); }
+
+    /* ── QUIZ LIST ── */
+    .quiz-list { display: flex; flex-direction: column; gap: 12px; }
+
+    .quiz-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: border-color .2s;
+    }
+    .quiz-item:hover { border-color: var(--muted); }
+
+    .quiz-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: var(--accent);
+      width: 36px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .quiz-info { flex: 1; min-width: 0; }
+    .quiz-title {
+      font-size: 15px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .quiz-meta {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .quiz-actions { display: flex; gap: 8px; align-items: center; }
+
+    .badge {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+    .badge-active { background: rgba(64,192,112,.15); color: var(--success); border: 1px solid rgba(64,192,112,.3); }
+    .badge-hidden { background: rgba(106,106,138,.15); color: var(--muted); border: 1px solid var(--border); }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .empty-state .icon { font-size: 36px; margin-bottom: 12px; }
+
+    /* ── SPINNER ── */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      .row2 { grid-template-columns: 1fr; }
+      header { padding: 0 16px; }
+      .container { padding: 24px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">MUSIC<span>QUIZ</span> <span style="font-size:14px;color:var(--muted);letter-spacing:1px;">ADMIN</span></div>
+  <div id="headerRight">
+    <button id="loginBtn" onclick="signIn()">Google로 로그인</button>
+  </div>
+</header>
+
+<!-- 비로그인 상태 -->
+<div id="loginScreen">
+  <div class="icon">🔐</div>
+  <p>관리자 계정으로 로그인해 주세요.</p>
+</div>
+
+<!-- 로그인 후 패널 -->
+<div id="adminPanel">
+  <div class="container">
+
+    <!-- 퀴즈 등록 폼 -->
+    <div class="section-title">📝 새 퀴즈 등록</div>
+    <div class="card">
+
+      <div class="row2">
+        <div class="form-group">
+          <label>문제 번호</label>
+          <input type="number" id="quizOrder" min="1" placeholder="예: 1">
+        </div>
+        <div class="form-group">
+          <label>정답 (아티스트 / 곡명)</label>
+          <input type="text" id="quizAnswer" placeholder="예: BTS - Dynamite">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>힌트용 음원 <span style="color:var(--muted)">(퀴즈 중 재생 — 일부 구간)</span></label>
+        <div class="file-upload-area" id="hintArea">
+          <input type="file" id="hintFile" accept="audio/*" onchange="onFileSelect('hint')">
+          <div class="upload-icon">🎵</div>
+          <div class="upload-label">클릭하거나 파일을 드래그하세요<br><strong>MP3, M4A, WAV</strong> 지원</div>
+          <div class="file-name" id="hintFileName"></div>
+        </div>
+        <div class="progress-wrap" id="hintProgress">
+          <div class="progress-bar-bg"><div class="progress-bar" id="hintBar"></div></div>
+          <div class="progress-text" id="hintProgressText"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>정답용 음원 <span style="color:var(--muted)">(정답 공개 시 재생 — 풀버전)</span></label>
+        <div class="file-upload-area" id="answerArea">
+          <input type="file" id="answerFile" accept="audio/*" onchange="onFileSelect('answer')">
+          <div class="upload-icon">🎤</div>
+          <div class="upload-label">클릭하거나 파일을 드래그하세요<br><strong>MP3, M4A, WAV</strong> 지원</div>
+          <div class="file-name" id="answerFileName"></div>
+        </div>
+        <div class="progress-wrap" id="answerProgress">
+          <div class="progress-bar-bg"><div class="progress-bar" id="answerBar"></div></div>
+          <div class="progress-text" id="answerProgressText"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>가사 <span style="color:var(--muted)">(정답 공개 시 노출 — 선택사항)</span></label>
+        <textarea id="quizLyrics" placeholder="가사를 입력하세요..."></textarea>
+      </div>
+
+      <button class="btn-primary" id="submitBtn" onclick="submitQuiz()">등록하기</button>
+    </div>
+
+    <!-- 등록된 퀴즈 목록 -->
+    <div class="section-title">📋 등록된 퀴즈 목록</div>
+    <div class="card">
+      <div id="quizList">
+        <div class="empty-state">
+          <div class="icon">🎼</div>
+          <div>등록된 퀴즈가 없습니다.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, orderBy, query }
+    from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+  import { getStorage, ref, uploadBytesResumable, getDownloadURL }
+    from "https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js";
+
+  // ── Firebase Config ──────────────────────────────────────
+  const firebaseConfig = {
+    apiKey: "AIzaSyDr_W2M1tSfSP5YU-KRuekkuWgbT8gZE3A",
+    authDomain: "music-quiz-29f1d.firebaseapp.com",
+    projectId: "music-quiz-29f1d",
+    storageBucket: "music-quiz-29f1d.firebasestorage.app",
+    messagingSenderId: "684205843744",
+    appId: "1:684205843744:web:8be7328bbfbcf8e034a345"
+  };
+
+  const app   = initializeApp(firebaseConfig);
+  const auth  = getAuth(app);
+  const db    = getFirestore(app);
+  const storage = getStorage(app);
+
+  // ── 전역 노출 ────────────────────────────────────────────
+  window._fb = { auth, db, storage,
+    GoogleAuthProvider, signInWithPopup, signOut,
+    collection, addDoc, getDocs, deleteDoc, doc, orderBy, query,
+    ref, uploadBytesResumable, getDownloadURL
+  };
+
+  // ── Auth 상태 감지 ───────────────────────────────────────
+  onAuthStateChanged(auth, user => {
+    const panel = document.getElementById('adminPanel');
+    const loginScreen = document.getElementById('loginScreen');
+    const headerRight = document.getElementById('headerRight');
+
+    if (user) {
+      panel.style.display = 'block';
+      loginScreen.style.display = 'none';
+      headerRight.innerHTML = `
+        <div class="user-info">
+          <span>${user.displayName || user.email}</span>
+          <button id="logoutBtn" onclick="signOutUser()">로그아웃</button>
+        </div>`;
+      loadQuizList();
+    } else {
+      panel.style.display = 'none';
+      loginScreen.style.display = 'flex';
+      headerRight.innerHTML = `<button id="loginBtn" onclick="signIn()">Google로 로그인</button>`;
+    }
+  });
+</script>
+
+<script>
+  // ── 로그인 / 로그아웃 ────────────────────────────────────
+  function signIn() {
+    const { auth, GoogleAuthProvider, signInWithPopup } = window._fb;
+    signInWithPopup(auth, new GoogleAuthProvider()).catch(e => showToast('로그인 실패: ' + e.message, 'error'));
+  }
+  function signOutUser() {
+    window._fb.signOut(window._fb.auth);
+  }
+  window.signIn = signIn;
+  window.signOutUser = signOutUser;
+
+  // ── 파일 선택 표시 ───────────────────────────────────────
+  function onFileSelect(type) {
+    const file = document.getElementById(type + 'File').files[0];
+    if (file) document.getElementById(type + 'FileName').textContent = '✔ ' + file.name;
+  }
+  window.onFileSelect = onFileSelect;
+
+  // ── 파일 업로드 (Storage) ────────────────────────────────
+  function uploadFile(file, path, barId, wrapId, textId) {
+    return new Promise((resolve, reject) => {
+      const { storage, ref, uploadBytesResumable, getDownloadURL } = window._fb;
+      const storageRef = ref(storage, path);
+      const task = uploadBytesResumable(storageRef, file);
+
+      document.getElementById(wrapId).style.display = 'block';
+
+      task.on('state_changed',
+        snap => {
+          const pct = Math.round(snap.bytesTransferred / snap.totalBytes * 100);
+          document.getElementById(barId).style.width = pct + '%';
+          document.getElementById(textId).textContent = `업로드 중... ${pct}%`;
+        },
+        err => reject(err),
+        async () => {
+          const url = await getDownloadURL(task.snapshot.ref);
+          document.getElementById(textId).textContent = '업로드 완료 ✔';
+          resolve(url);
+        }
+      );
+    });
+  }
+
+  // ── 퀴즈 등록 ────────────────────────────────────────────
+  async function submitQuiz() {
+    const order   = document.getElementById('quizOrder').value.trim();
+    const answer  = document.getElementById('quizAnswer').value.trim();
+    const hintF   = document.getElementById('hintFile').files[0];
+    const answerF = document.getElementById('answerFile').files[0];
+    const lyrics  = document.getElementById('quizLyrics').value.trim();
+
+    if (!order || !answer || !hintF || !answerF) {
+      showToast('문제 번호, 정답, 두 음원 파일은 필수입니다.', 'error'); return;
+    }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>';
+
+    try {
+      const ts = Date.now();
+      const hintUrl   = await uploadFile(hintF,   `quizzes/${ts}_hint_${hintF.name}`,   'hintBar',   'hintProgress',   'hintProgressText');
+      const answerUrl = await uploadFile(answerF, `quizzes/${ts}_answer_${answerF.name}`, 'answerBar', 'answerProgress', 'answerProgressText');
+
+      const { db, collection, addDoc } = window._fb;
+      await addDoc(collection(db, 'quizzes'), {
+        order: parseInt(order),
+        answer,
+        hintUrl,
+        answerUrl,
+        lyrics,
+        createdAt: new Date().toISOString()
+      });
+
+      showToast(`Q${order} 등록 완료!`, 'success');
+      resetForm();
+      loadQuizList();
+    } catch (e) {
+      showToast('오류: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '등록하기';
+    }
+  }
+  window.submitQuiz = submitQuiz;
+
+  // ── 폼 초기화 ─────────────────────────────────────────────
+  function resetForm() {
+    ['quizOrder','quizAnswer','quizLyrics'].forEach(id => document.getElementById(id).value = '');
+    ['hint','answer'].forEach(t => {
+      document.getElementById(t+'File').value = '';
+      document.getElementById(t+'FileName').textContent = '';
+      document.getElementById(t+'Progress').style.display = 'none';
+      document.getElementById(t+'Bar').style.width = '0%';
+    });
+  }
+
+  // ── 퀴즈 목록 로드 ───────────────────────────────────────
+  async function loadQuizList() {
+    const { db, collection, getDocs, query, orderBy } = window._fb;
+    const snap = await getDocs(query(collection(db, 'quizzes'), orderBy('order')));
+    const container = document.getElementById('quizList');
+
+    if (snap.empty) {
+      container.innerHTML = `<div class="empty-state"><div class="icon">🎼</div><div>등록된 퀴즈가 없습니다.</div></div>`;
+      return;
+    }
+
+    container.innerHTML = `<div class="quiz-list"></div>`;
+    const list = container.querySelector('.quiz-list');
+
+    snap.forEach(d => {
+      const data = d.data();
+      const item = document.createElement('div');
+      item.className = 'quiz-item';
+      item.innerHTML = `
+        <div class="quiz-num">${data.order}</div>
+        <div class="quiz-info">
+          <div class="quiz-title">${data.answer}</div>
+          <div class="quiz-meta">힌트음원 ✔ &nbsp;|&nbsp; 정답음원 ✔ &nbsp;${data.lyrics ? '|&nbsp; 가사 ✔' : ''}</div>
+        </div>
+        <div class="quiz-actions">
+          <button class="btn-danger" onclick="deleteQuiz('${d.id}')">삭제</button>
+        </div>`;
+      list.appendChild(item);
+    });
+  }
+
+  // ── 퀴즈 삭제 ────────────────────────────────────────────
+  async function deleteQuiz(id) {
+    if (!confirm('이 퀴즈를 삭제할까요?')) return;
+    const { db, deleteDoc, doc } = window._fb;
+    await deleteDoc(doc(db, 'quizzes', id));
+    showToast('삭제되었습니다.', 'success');
+    loadQuizList();
+  }
+  window.deleteQuiz = deleteQuiz;
+
+  // ── 토스트 ───────────────────────────────────────────────
+  function showToast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'show ' + type;
+    setTimeout(() => t.className = '', 2800);
+  }
+
+  // ── 드래그 앤 드롭 ───────────────────────────────────────
+  ['hint','answer'].forEach(type => {
+    const area = document.getElementById(type + 'Area');
+    area.addEventListener('dragover', e => { e.preventDefault(); area.classList.add('dragover'); });
+    area.addEventListener('dragleave', () => area.classList.remove('dragover'));
+    area.addEventListener('drop', e => {
+      e.preventDefault();
+      area.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('audio/')) {
+        const input = document.getElementById(type + 'File');
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        document.getElementById(type + 'FileName').textContent = '✔ ' + file.name;
+      }
+    });
+  });
+</script>
+</body>
+</html>
