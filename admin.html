@@ -332,6 +332,59 @@
     }
     .empty-state .icon { font-size: 36px; margin-bottom: 12px; }
 
+    /* ── STAR RATING ── */
+    .star-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .star-group input[type="radio"] { display: none; }
+    .star-group label {
+      font-size: 32px;
+      color: var(--border);
+      cursor: pointer;
+      transition: color .15s, transform .15s;
+      text-transform: none;
+      letter-spacing: 0;
+      margin-bottom: 0;
+      padding: 0;
+    }
+    .star-group label:hover,
+    .star-group label:hover ~ label { color: var(--border); }
+    .star-group:hover label { color: var(--accent); }
+    .star-group label:hover ~ label { color: var(--border) !important; }
+    .star-group input[type="radio"]:checked ~ label { color: var(--border); }
+    .star-group input[type="radio"]:checked + label,
+    .star-group input[type="radio"]:checked ~ input:checked + label { color: var(--accent); }
+    /* 선택된 별 이하 모두 노란색 */
+    .star-group { flex-direction: row-reverse; justify-content: flex-end; }
+    .star-group label:hover,
+    .star-group label:hover ~ label { color: var(--accent) !important; }
+    .star-group input[type="radio"]:checked ~ label { color: var(--border) !important; }
+    .star-group input[type="radio"]:checked + label { color: var(--accent) !important; }
+    .star-item { position: relative; }
+    .stars-wrap {
+      display: flex;
+      flex-direction: row;
+      gap: 6px;
+      align-items: center;
+    }
+    .star-btn {
+      font-size: 34px;
+      cursor: pointer;
+      color: var(--border);
+      transition: color .15s, transform .15s;
+      line-height: 1;
+      user-select: none;
+    }
+    .star-btn:hover { transform: scale(1.15); }
+    .star-btn.active { color: var(--accent); }
+    .star-hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-left: 8px;
+    }
+
     /* ── SPINNER ── */
     .spinner {
       width: 18px; height: 18px;
@@ -411,6 +464,19 @@
           <div class="progress-bar-bg"><div class="progress-bar" id="answerBar"></div></div>
           <div class="progress-text" id="answerProgressText"></div>
         </div>
+      </div>
+
+      <div class="form-group">
+        <label>난이도</label>
+        <div class="stars-wrap" id="starsWrap">
+          <span class="star-btn" data-val="1">★</span>
+          <span class="star-btn" data-val="2">★</span>
+          <span class="star-btn" data-val="3">★</span>
+          <span class="star-btn" data-val="4">★</span>
+          <span class="star-btn" data-val="5">★</span>
+          <span class="star-hint" id="starHint">선택 안 함</span>
+        </div>
+        <input type="hidden" id="quizDifficulty" value="0">
       </div>
 
       <div class="form-group">
@@ -538,11 +604,12 @@
 
   // ── 퀴즈 등록 ────────────────────────────────────────────
   async function submitQuiz() {
-    const order   = document.getElementById('quizOrder').value.trim();
-    const answer  = document.getElementById('quizAnswer').value.trim();
-    const hintF   = document.getElementById('hintFile').files[0];
-    const answerF = document.getElementById('answerFile').files[0];
-    const lyrics  = document.getElementById('quizLyrics').value.trim();
+    const order      = document.getElementById('quizOrder').value.trim();
+    const answer     = document.getElementById('quizAnswer').value.trim();
+    const hintF      = document.getElementById('hintFile').files[0];
+    const answerF    = document.getElementById('answerFile').files[0];
+    const lyrics     = document.getElementById('quizLyrics').value.trim();
+    const difficulty = parseInt(document.getElementById('quizDifficulty').value) || 0;
 
     if (!order || !answer || !hintF || !answerF) {
       showToast('문제 번호, 정답, 두 음원 파일은 필수입니다.', 'error'); return;
@@ -564,6 +631,7 @@
         hintUrl,
         answerUrl,
         lyrics,
+        difficulty,
         createdAt: new Date().toISOString()
       });
 
@@ -582,6 +650,9 @@
   // ── 폼 초기화 ─────────────────────────────────────────────
   function resetForm() {
     ['quizOrder','quizAnswer','quizLyrics'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('quizDifficulty').value = '0';
+    document.querySelectorAll('.star-btn').forEach(s => s.classList.remove('active'));
+    document.getElementById('starHint').textContent = '선택 안 함';
     ['hint','answer'].forEach(t => {
       document.getElementById(t+'File').value = '';
       document.getElementById(t+'FileName').textContent = '';
@@ -612,7 +683,7 @@
         <div class="quiz-num">${data.order}</div>
         <div class="quiz-info">
           <div class="quiz-title">${data.answer}</div>
-          <div class="quiz-meta">힌트음원 ✔ &nbsp;|&nbsp; 정답음원 ✔ &nbsp;${data.lyrics ? '|&nbsp; 가사 ✔' : ''}</div>
+          <div class="quiz-meta">힌트음원 ✔ &nbsp;|&nbsp; 정답음원 ✔ &nbsp;${data.lyrics ? '|&nbsp; 가사 ✔ &nbsp;' : ''}${data.difficulty ? '|&nbsp; ' + '★'.repeat(data.difficulty) + '☆'.repeat(5 - data.difficulty) : ''}</div>
         </div>
         <div class="quiz-actions">
           <button class="btn-danger" onclick="deleteQuiz('${d.id}')">삭제</button>
@@ -638,6 +709,31 @@
     t.className = 'show ' + type;
     setTimeout(() => t.className = '', 2800);
   }
+
+  // ── 별점 ────────────────────────────────────────────────
+  const starHintLabels = ['', '쉬움', '보통', '약간 어려움', '어려움', '매우 어려움'];
+  document.querySelectorAll('.star-btn').forEach(star => {
+    star.addEventListener('click', () => {
+      const val = parseInt(star.dataset.val);
+      document.getElementById('quizDifficulty').value = val;
+      document.querySelectorAll('.star-btn').forEach(s => {
+        s.classList.toggle('active', parseInt(s.dataset.val) <= val);
+      });
+      document.getElementById('starHint').textContent = starHintLabels[val];
+    });
+    star.addEventListener('mouseenter', () => {
+      const val = parseInt(star.dataset.val);
+      document.querySelectorAll('.star-btn').forEach(s => {
+        s.style.color = parseInt(s.dataset.val) <= val ? 'var(--accent)' : 'var(--border)';
+      });
+    });
+  });
+  document.getElementById('starsWrap').addEventListener('mouseleave', () => {
+    const cur = parseInt(document.getElementById('quizDifficulty').value) || 0;
+    document.querySelectorAll('.star-btn').forEach(s => {
+      s.style.color = parseInt(s.dataset.val) <= cur ? 'var(--accent)' : 'var(--border)';
+    });
+  });
 
   // ── 드래그 앤 드롭 ───────────────────────────────────────
   ['hint','answer'].forEach(type => {

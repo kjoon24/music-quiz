@@ -134,9 +134,16 @@
       font-size: 18px;
       letter-spacing: 3px;
       color: var(--muted);
-      margin-bottom: 24px;
+      margin-bottom: 12px;
     }
     .q-badge span { color: var(--accent); font-size: 28px; }
+
+    .q-difficulty {
+      font-size: 22px;
+      letter-spacing: 4px;
+      margin-bottom: 20px;
+      min-height: 28px;
+    }
 
     /* 물음표 비주얼 */
     .q-visual {
@@ -417,7 +424,7 @@
 
 <!-- 로딩 -->
 <div id="loadingOverlay">
-  <div class="loading-logo">MUSIC QUIZ</div>
+  <div class="loading-logo">찬양퀴즈 👂</div>
   <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
   <div class="loading-text">퀴즈 불러오는 중...</div>
 </div>
@@ -431,14 +438,15 @@
 
 <!-- ① 문제 목록 화면 -->
 <div id="screenList">
-  <div class="list-title">🎵 MUSIC QUIZ</div>
-  <div class="list-subtitle">문제를 선택하세요</div>
+  <div class="list-title">🎵 들리는데 안들리는<br>알다가도 모를 찬양퀴즈!</div>
+  <div class="list-subtitle">들리는데 모르겠쥬?&nbsp;&nbsp;헷갈리쥬?? 👂</div>
   <div class="quiz-grid" id="quizGrid"></div>
 </div>
 
 <!-- ② 퀴즈 진행 화면 -->
 <div id="screenQuiz">
   <div class="q-badge">QUESTION <span id="qNum">1</span></div>
+  <div class="q-difficulty" id="qDifficulty"></div>
   <div class="q-visual" id="qVisual">🎵</div>
   <div class="btn-group">
     <button class="btn-play" id="btnPlay" onclick="toggleHint()">
@@ -555,6 +563,17 @@
     resetPlayBtn();
 
     document.getElementById('qNum').textContent = currentQuiz.order;
+
+    // 난이도 별점
+    const diff = currentQuiz.difficulty || 0;
+    const diffEl = document.getElementById('qDifficulty');
+    if (diff > 0) {
+      diffEl.innerHTML =
+        `<span style="color:var(--accent)">${'★'.repeat(diff)}</span><span style="color:var(--border)">${'★'.repeat(5 - diff)}</span>`;
+    } else {
+      diffEl.innerHTML = '';
+    }
+
     hintAudio.src = currentQuiz.hintUrl;
 
     showScreen('screenQuiz');
