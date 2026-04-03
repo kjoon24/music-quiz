@@ -132,6 +132,44 @@
       margin-top: 6px;
     }
 
+    /* ── 떠다니는 말풍선 ── */
+    .float-bubble {
+      position: fixed;
+      pointer-events: none;
+      z-index: 5;
+      animation: floatUp linear forwards;
+      white-space: nowrap;
+    }
+    .float-bubble.is-text {
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      color: var(--accent);
+      font-family: 'Noto Sans KR', sans-serif;
+      font-weight: 700;
+      font-size: clamp(16px, 2.5vw, 26px);
+      padding: 10px 20px;
+      border-radius: 30px;
+      position: fixed;
+    }
+    .float-bubble.is-text::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 20px;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top: 10px solid var(--accent);
+    }
+    .float-bubble.is-emoji {
+      font-size: clamp(28px, 4vw, 52px);
+    }
+    @keyframes floatUp {
+      0%   { opacity: 0;   transform: translateY(0) scale(.8) rotate(var(--rot)); }
+      10%  { opacity: 1;   transform: translateY(-40px) scale(1) rotate(var(--rot)); }
+      80%  { opacity: 1; }
+      100% { opacity: 0;   transform: translateY(-220px) scale(.95) rotate(var(--rot2)); }
+    }
+
     /* ════════════════════════════════════
        SCREEN: 퀴즈 진행
     ════════════════════════════════════ */
@@ -570,7 +608,7 @@
       </div>
     `).join('');
   }
-  window.goList = function() { renderList(); };
+  window.goList = function() { stopBubbles(); renderList(); };
 
   // ── 문제 선택 ────────────────────────────────────────────
   window.selectQuiz = function(index) {
@@ -595,6 +633,45 @@
     showScreen('screenQuiz');
   };
 
+  // ── 떠다니는 말풍선 ─────────────────────────────────────
+  const bubbleTexts = ['모르겠쥬?', '했갈리쥬?', '알쏭달쏭?', '뭐였더라...', '음... 🤔', '이거 맞나?'];
+  const bubbleEmojis = ['🤔', '😵', '😅', '🙄', '😬', '🫠', '😶', '🤷', '😮', '🫣', '😦', '🤭'];
+  let bubbleTimer = null;
+
+  function launchBubble() {
+    const isText = Math.random() > 0.45;
+    const el = document.createElement('div');
+    el.className = 'float-bubble ' + (isText ? 'is-text' : 'is-emoji');
+
+    if (isText) {
+      el.textContent = bubbleTexts[Math.floor(Math.random() * bubbleTexts.length)];
+    } else {
+      el.textContent = bubbleEmojis[Math.floor(Math.random() * bubbleEmojis.length)];
+    }
+
+    const rot  = (Math.random() * 16 - 8).toFixed(1) + 'deg';
+    const rot2 = (Math.random() * 16 - 8).toFixed(1) + 'deg';
+    const duration = 2.8 + Math.random() * 2;
+    el.style.cssText += `
+      left: ${8 + Math.random() * 80}vw;
+      bottom: ${12 + Math.random() * 30}vh;
+      --rot: ${rot}; --rot2: ${rot2};
+      animation-duration: ${duration}s;
+    `;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), duration * 1000);
+  }
+
+  function startBubbles() {
+    launchBubble();
+    bubbleTimer = setInterval(() => launchBubble(), 900);
+  }
+  function stopBubbles() {
+    clearInterval(bubbleTimer);
+    bubbleTimer = null;
+    document.querySelectorAll('.float-bubble').forEach(b => b.remove());
+  }
+
   // ── 힌트 음원 재생/정지 ──────────────────────────────────
   window.toggleHint = function() {
     if (hintAudio.paused) {
@@ -604,16 +681,18 @@
       document.getElementById('playIcon').textContent = '⏸';
       document.getElementById('playLabel').textContent = '일시정지';
       document.getElementById('btnPlay').classList.add('playing');
+      startBubbles();
     } else {
       hintAudio.pause();
       document.getElementById('qVisual').classList.remove('playing');
       document.getElementById('playIcon').textContent = '▶';
       document.getElementById('playLabel').textContent = '노래 듣기';
       document.getElementById('btnPlay').classList.remove('playing');
+      stopBubbles();
     }
   };
 
-  hintAudio.addEventListener('ended', () => resetPlayBtn());
+  hintAudio.addEventListener('ended', () => { resetPlayBtn(); stopBubbles(); });
 
   function resetPlayBtn() {
     document.getElementById('qVisual').classList.remove('playing');
@@ -626,6 +705,7 @@
   window.revealAnswer = function() {
     if (!currentQuiz) return;
     stopAll();
+    stopBubbles();
     doneSet.add(currentQuiz.id);
 
     // 정답 텍스트
